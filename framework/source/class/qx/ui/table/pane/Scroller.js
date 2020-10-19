@@ -1009,9 +1009,9 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       if(this.__resizeMetaColumn){
         var minColumnWidth = 100; //TODO
       }else{
-      // We are currently resizing -> Update the position
-      var headerCell = this.__header.getHeaderWidgetAtColumn(this.__resizeColumn);
-      var minColumnWidth = headerCell.getSizeHint().minWidth;
+        // We are currently resizing -> Update the position
+        var headerCell = this.__header.getHeaderWidgetAtColumn(this.__resizeColumn);
+        var minColumnWidth = headerCell.getSizeHint().minWidth;
       }
 
       var newWidth = Math.max(minColumnWidth, this.__lastResizeWidth + pageX - this.__lastResizePointerPageX);
@@ -1168,6 +1168,10 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       {
         // The pointer is over a resize region -> Show the right cursor
         useResizeCursor = true;
+      }else{
+        var resizeMetaColumn = this._getResizeMetaColumnForPageX(pageX);
+        useResizeCursor = resizeMetaColumn != -1;
+
       }
       var cursor = useResizeCursor ? "col-resize" : null;
       this.getApplicationRoot().setGlobalCursor(cursor);
@@ -1236,8 +1240,8 @@ qx.Class.define("qx.ui.table.pane.Scroller",
         this.__resizeColumn = metaColIndex;
         this.__lastResizeWidth = this.getTable().getMetaColumnWidth(metaColIndex);
       }else{
-      // The pointer is over a resize region -> Start resizing
-      this.__resizeColumn = resizeCol;
+        // The pointer is over a resize region -> Start resizing
+        this.__resizeColumn = resizeCol;
         this.__lastResizeWidth = columnModel.getColumnWidth(this.__resizeColumn);
       }
 
@@ -1392,7 +1396,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
         columnModel.setColumnWidth(this.__resizeColumn,
                                    this.__lastResizeWidth,
                                    true);
-      }
+        }
       }
 
       this.__resizeMetaColumn = false;
@@ -1509,7 +1513,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       {
         // pointer is not in a resize region
         var col = this._getColumnForPageX(pageX);
-
+        
         if (col != null && tableModel.isColumnSortable(col))
         {
           // Sort that column
@@ -1687,7 +1691,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
         e.preventDefault();
       }
     },
-
+   
     // overridden
     _onContextMenuOpen : function(e)
     {
@@ -2194,6 +2198,33 @@ qx.Class.define("qx.ui.table.pane.Scroller",
           if (pageX >= (currX - regionRadius) && pageX <= (currX + regionRadius)) {
             return col;
           }
+        }
+      }
+
+      return -1;
+    },
+
+    /**
+     * Returns the meta column index that should be resized when dragging
+     * starts here. Returns -1 if the pointer is in no resize region of any meta column.
+     *
+     * @param pageX {Integer} the x position of the pointer in the page (in pixels).
+     * @return {Integer} the meta column index.
+     */
+    _getResizeMetaColumnForPageX : function(pageX)
+    {
+      var contentLocation = this.__header.getContentLocation() || this.__tablePane.getContentLocation();
+      if (contentLocation) {
+        var currX = contentLocation.left;
+        var pane = this.getTablePane();
+        var regionRadius = qx.ui.table.pane.Scroller.RESIZE_REGION_RADIUS;
+
+        currX += pane.getMaxWidth();
+
+        var col = 1; //TODO: where to get meta col idx from
+
+        if (pageX >= (currX - regionRadius) && pageX <= (currX + regionRadius)) {
+          return col;
         }
       }
 
