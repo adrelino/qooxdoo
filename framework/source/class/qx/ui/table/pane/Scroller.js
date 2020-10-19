@@ -76,6 +76,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     this._headerClipper.addListener("pointermove", this._onPointermoveHeader, this);
     this._headerClipper.addListener("pointerdown", this._onPointerdownHeader, this);
     this._headerClipper.addListener("pointerup", this._onPointerupHeader, this);
+    this._headerClipper.addListener("contextmenu",this._onContextMenuHeader, this);
     this._headerClipper.addListener("tap", this._onTapHeader, this);
     this.__top.add(this._headerClipper, {flex: 1});
 
@@ -1615,6 +1616,38 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       }
     },
 
+   /**
+     * Event handler. Called when a context menu is invoked in a header.
+     *
+     * @param e {qx.event.type.Pointer} the event.
+     */
+    _onContextMenuHeader : function(e)
+    {
+      var pageX = e.getDocumentLeft();
+      var resizeCol = this._getResizeColumnForPageX(pageX);
+  
+      if (resizeCol == -1)
+      {
+        // pointer is not in a resize region
+        var col = this._getColumnForPageX(pageX);
+          
+        if(col != null){ //"contextmenu" event\
+          var tcm = this.getTable().getTableColumnModel();
+          var visX = tcm.getVisibleX(col);
+          var menu = new qx.ui.menu.Menu();
+          var button = new qx.ui.menu.Button(this.tr("Split pane here with %1 columns to the left",visX));
+          button.addListener("execute",function(){
+            this.getTable().setMetaColumnCounts([visX,-1]);
+          },this);
+          menu.add(button);
+          //menu.add(new qx.ui.menu.Separator());
+          menu.openAtPointer(e);
+        }
+
+        // Do not show native menu
+        e.preventDefault();
+      }
+    },
 
     // overridden
     _onContextMenuOpen : function(e)

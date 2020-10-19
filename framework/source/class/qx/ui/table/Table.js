@@ -1145,6 +1145,8 @@ qx.Class.define("qx.ui.table.Table",
         // Set the right header height
         paneScroller.getHeader().setHeight(this.getHeaderCellHeight());
 
+        paneScroller.updateHorScrollBarMaximum();
+
         // Put the column visibility button in the top right corner of the last meta column
         paneScroller.setTopRightWidget(isLast ? this.getChildControl("column-button") : null);
       }
