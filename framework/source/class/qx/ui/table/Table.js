@@ -2064,6 +2064,10 @@ qx.Class.define("qx.ui.table.Table",
       {
         var isLast = (i == (scrollerArr.length - 1));
         var width = scrollerArr[i].getTablePaneModel().getTotalWidth();
+        if(scrollerArr[i].paneWidthFixed){ //TODO: hack
+          width = this.getMetaColumnWidth(i);
+        }
+
         scrollerArr[i].setPaneWidth(width);
 
         var flex = isLast ? 1 : 0;
@@ -2071,6 +2075,23 @@ qx.Class.define("qx.ui.table.Table",
       }
     },
 
+     setMetaColumnWidth : function(metaCol, width)
+     {
+       var pane = (metaCol != -1) ? this.getPaneScroller(metaCol) : null;
+       if(pane){
+         pane.paneWidthFixed=true; //TODO: hack
+         pane.setPaneWidth(width);
+       }
+     },
+
+     getMetaColumnWidth : function(metaCol)
+     {
+       var pane = (metaCol != -1) ? this.getPaneScroller(metaCol) : null;
+       if(pane){
+         var width = pane.getPaneWidth();
+         return width;
+       }
+     },
 
     /**
      * Updates the visibility of the scrollbars in the meta columns.

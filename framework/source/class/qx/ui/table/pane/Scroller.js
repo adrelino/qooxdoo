@@ -387,6 +387,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     __lastMovePointerPageX : null,
 
     __resizeColumn : null,
+    __resizeMetaColumn : false,
     __lastResizePointerPageX : null,
     __lastResizeWidth : null,
 
@@ -454,6 +455,17 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       this.setWidth(width);
     },
 
+    /**
+     * Get the pane's width
+     */
+    getPaneWidth : function()
+    {
+      var width = this.getWidth();
+      if (this.isVerticalScrollBarVisible()) {
+        width -= this.getPaneInsetRight();
+      }
+      return width;
+    },
 
     // overridden
     _createChildControlImpl : function(id, hash)
@@ -993,13 +1005,26 @@ qx.Class.define("qx.ui.table.pane.Scroller",
     __handleResizeColumn : function(pageX)
     {
       var table = this.getTable();
+
+      if(this.__resizeMetaColumn){
+        var minColumnWidth = 100; //TODO
+      }else{
       // We are currently resizing -> Update the position
       var headerCell = this.__header.getHeaderWidgetAtColumn(this.__resizeColumn);
       var minColumnWidth = headerCell.getSizeHint().minWidth;
+      }
 
       var newWidth = Math.max(minColumnWidth, this.__lastResizeWidth + pageX - this.__lastResizePointerPageX);
 
-      if (this.getLiveResize()) {
+      if(this.__resizeMetaColumn){
+        var paneModel = this.getTablePaneModel();
+        var counts = table.getMetaColumnCounts();
+        var leftMostColumnInMetaColumnVisX = 0;
+        for(var i=0; i < counts.length && i < this.__resizeColumn; i++){
+          leftMostColumnInMetaColumnVisX += counts[i];
+        }
+        this._showResizeLine(paneModel.getColumnLeft(leftMostColumnInMetaColumnVisX) + newWidth);  //TODO: does not work if increasing with, and is offset if decreasing
+      } else if (this.getLiveResize()) {
         var columnModel = table.getTableColumnModel();
         columnModel.setColumnWidth(this.__resizeColumn, newWidth, true);
       } else {
@@ -1178,7 +1203,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       if (resizeCol != -1)
       {
         // The pointer is over a resize region -> Start resizing
-        this._startResizeHeader(resizeCol, pageX);
+        this._startResizeHeader(resizeCol, pageX, e);
         e.stop();
       }
       else
@@ -1200,14 +1225,23 @@ qx.Class.define("qx.ui.table.pane.Scroller",
      * @param resizeCol {Integer} the column index
      * @param pageX {Integer} x coordinate of the pointer event
      */
-    _startResizeHeader : function(resizeCol, pageX)
+    _startResizeHeader : function(resizeCol, pageX, e)
     {
       var columnModel = this.getTable().getTableColumnModel();
 
+      if(e.isRightPressed()){
+        //when right click is pressed, resize a metaColumn instead of a normal column
+        var metaColIndex = this.getTable()._getMetaColumnAtPageX(pageX); //TODO: protected
+        this.__resizeMetaColumn = true;
+        this.__resizeColumn = metaColIndex;
+        this.__lastResizeWidth = this.getTable().getMetaColumnWidth(metaColIndex);
+      }else{
       // The pointer is over a resize region -> Start resizing
       this.__resizeColumn = resizeCol;
+        this.__lastResizeWidth = columnModel.getColumnWidth(this.__resizeColumn);
+      }
+
       this.__lastResizePointerPageX = pageX;
-      this.__lastResizeWidth = columnModel.getColumnWidth(this.__resizeColumn);
       this._headerClipper.capture();
     },
 
@@ -1253,7 +1287,7 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       if (resizeCol != -1)
       {
         // The pointer is over a resize region -> Start resizing
-        this._startResizeHeader(resizeCol, pageX);
+        this._startResizeHeader(resizeCol, pageX, e);
         e.stop();
         return;
       }
@@ -1352,11 +1386,16 @@ qx.Class.define("qx.ui.table.pane.Scroller",
       // We are currently resizing -> Finish resizing
       if (! this.getLiveResize()) {
         this._hideResizeLine();
+        if(this.__resizeMetaColumn){
+          this.getTable().setMetaColumnWidth(this.__resizeColumn, this.__lastResizeWidth);
+        }else{
         columnModel.setColumnWidth(this.__resizeColumn,
                                    this.__lastResizeWidth,
                                    true);
       }
+      }
 
+      this.__resizeMetaColumn = false;
       this.__resizeColumn = null;
       this._headerClipper.releaseCapture();
 
